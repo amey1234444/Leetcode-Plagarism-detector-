@@ -1,0 +1,5 @@
+**/.env
+**/.direnv
+**/.venv
+**/*.pem
+.envrc
