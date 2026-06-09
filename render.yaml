@@ -1,0 +1,50 @@
+# Render Blueprint for the LeetCode Plagiarism Detector web app.
+# This provisions the Spring Boot + React container (built from the root Dockerfile)
+# and a managed PostgreSQL database, wired together automatically.
+#
+# Usage: push this repo to GitHub, then in the Render dashboard choose
+# "New +" -> "Blueprint" and point it at this repository.
+# Docs: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: leetcode-plagiarism-detector
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health
+    autoDeploy: true
+    envVars:
+      # Auto-create/update the schema on first boot against the fresh database.
+      - key: DDL_AUTO
+        value: update
+      # Keep the JVM inside the 512 MB free-tier memory limit.
+      - key: JAVA_TOOL_OPTIONS
+        value: "-XX:MaxRAMPercentage=70"
+      # Database connection, injected from the managed Postgres instance below.
+      - key: DB_HOST
+        fromDatabase:
+          name: lpd-postgres
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: lpd-postgres
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: lpd-postgres
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: lpd-postgres
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: lpd-postgres
+          property: password
+
+databases:
+  - name: lpd-postgres
+    plan: free
+    databaseName: lpd
+    user: lpd

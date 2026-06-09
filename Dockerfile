@@ -10,7 +10,7 @@ FROM node AS frontend
 RUN pnpm install --frozen-lockfile
 RUN pnpm run build
 
-FROM openjdk:22-slim AS backend
+FROM eclipse-temurin:21-jdk-jammy AS backend
 WORKDIR /app
 
 COPY backend/.mvn/ .mvn/
@@ -18,12 +18,12 @@ COPY backend/mvnw ./
 COPY backend/pom.xml ./
 COPY backend/src ./src/
 COPY --from=frontend /frontend/dist/ ./src/main/resources/static/
-RUN ./mvnw package -Dmaven.test.skip
+RUN chmod +x mvnw && ./mvnw package -Dmaven.test.skip
 
-FROM openjdk:22-slim
+FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
 COPY --from=backend /app/target/*.jar app.jar
 RUN addgroup --system spring && adduser --system --ingroup spring --home /home/spring spring
 USER spring:spring
-EXPOSE 80
+EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
