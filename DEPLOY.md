@@ -66,6 +66,44 @@ Set the app's internal port to `8080` in `fly.toml` (`[http_service] internal_po
    (Neon requires SSL, so append `?sslmode=require` if you use
    `DB_CONNECTION_STRING`).
 
+## Getting data into the app
+
+A fresh deployment starts with an empty database, so the UI shows no reports
+until data is ingested. There are two ways to populate it.
+
+### Live data (production) — requires a residential proxy
+
+The scrapers in [`data/`](./data) pull contest submissions from LeetCode, run
+`copydetect`, and POST the results to the API. LeetCode's contest endpoints are
+behind **Cloudflare bot protection**, which blocks datacenter/cloud IPs, so the
+scrapers must route through a residential proxy. The code already supports this
+via the `OXYLABS_CREDENTIALS` environment variable (any Oxylabs-compatible
+residential proxy works).
+
+```bash
+cd data
+pip install -r requirements.txt
+export API_BASE_URL=https://<your-app-url>
+export OXYLABS_CREDENTIALS="<user>:<pass>"   # residential proxy
+CONTEST_SLUG=weekly-contest-507 python -c "import scraping.submissions.run as r; r.handler({},None)"
+CONTEST_SLUG=weekly-contest-507 python -c "import processing.copydetect.run as r; r.handler({},None)"
+```
+
+Run this per contest (e.g. on a weekly schedule) to keep the app up to date.
+
+### Demo data (no proxy needed)
+
+To see the app working immediately without scraping, seed a realistic dataset.
+[`data/seed_demo.py`](./data/seed_demo.py) ingests a contest, two questions and a
+mix of submissions through the real API, then runs the real `copydetect`
+pipeline so genuine plagiarism groups appear in the UI.
+
+```bash
+cd data
+pip install -r requirements.txt
+API_BASE_URL=https://<your-app-url> python seed_demo.py
+```
+
 ## Run locally with Docker
 
 ```bash
